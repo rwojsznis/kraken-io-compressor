@@ -10,12 +10,12 @@ module Kraken
 
       attr_reader :kraken, :glob, :current_dir
 
-      def initialize(key, secret, glob_path: nil, working_directory: nil, exclude: nil, upload_options: nil)
+      def initialize(key, secret, glob_path: nil, working_directory: nil, exclude: nil, upload: nil)
         @kraken      = Kraken::API.new(api_key: key, api_secret: secret)
         @glob        = glob_path || DEFAULT_GLOB
         @current_dir = working_directory || "#{Dir.pwd}/"
-        @exclude     = exclude
-        @upload      = upload_options || proc { }
+        @exclude     = exclude || proc { }
+        @upload      = upload  || proc { }
 
         prepare
       end
@@ -85,7 +85,7 @@ module Kraken
 
         files = []
         @mapped = Dir[current_dir + glob].each_with_object({}) do |file_path, hash|
-          next if @exclude && file_path =~ @exclude
+          next if @exclude.call(file_path)
 
           @total_files += 1
 
