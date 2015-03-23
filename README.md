@@ -9,9 +9,10 @@ WIP, might destroy your data.
 - slow (not threaded)
 - not very customizable
 - known usage-limitations
+- no tests whatsoever
 - probably won't be very maintained 
 
-You have been warned.
+This is working proof of concept hacked within few hours. You have been warned.
 
 ### Usage
 
