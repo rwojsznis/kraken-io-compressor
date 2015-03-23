@@ -6,12 +6,14 @@ module Kraken
   module Compressor
     class Task
       HISTORY = '.kraken'
+      DEFAULT_GLOB = '/{app,public}/**/*.{jpg,png,gif}'
+
       attr_reader :kraken, :glob, :current_dir
 
       def initialize(key, secret, glob_path: nil, working_directory: nil)
         @kraken      = Kraken::API.new(api_key: key, api_secret: secret)
-        @glob        = glob_path || "{app,public}/**/*.{jpg,png,gif}"
-        @current_dir = working_directory || File.dirname(__FILE__) + "/"
+        @glob        = glob_path || DEFAULT_GLOB
+        @current_dir = working_directory || Dir.pwd
 
         prepare
       end
@@ -20,7 +22,7 @@ module Kraken
         if anything?
           puts "Total files: #{@total} (#{(@size.to_f / 1024 / 1024).round(2)} MB)"
           puts "Continue? (y/n)"
-          input = gets.strip
+          input = STDIN.gets.strip
           case input
           when 'y'
             optimize
@@ -69,7 +71,7 @@ module Kraken
 
       def save_history
         new_history = []
-        @history.merge(@mapped).each do |key, value|
+        history.merge(@mapped).each do |key, value|
           new_history << "#{key};#{value}"
         end
 
@@ -93,8 +95,8 @@ module Kraken
         end
 
         # files already removed
-        @history.dup.each do |file_path, hash|
-          @history.delete(file_path) unless files.include?(file_path)
+        history.dup.each do |file_path, hash|
+          history.delete(file_path) unless files.include?(file_path)
         end
       end
 
@@ -103,13 +105,13 @@ module Kraken
       end
 
       def history
-        @history ||= if File.exists?(current_dir + HISTORY)
-          File.read(current_dir + HISTORY).split("\n").each_with_object({}) do |line, hash|
-            name, sha = line.split(";")
-            hash[name] = sha
-          end
-        else
-          {}
+        @history ||= File.exists?(current_dir + HISTORY) ? load_history : {}
+      end
+
+      def load_history
+        File.read(current_dir + HISTORY).split("\n").each_with_object({}) do |line, hash|
+          name, sha = line.split(";")
+          hash[name] = sha
         end
       end
     end
