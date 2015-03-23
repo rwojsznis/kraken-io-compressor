@@ -6,14 +6,15 @@ module Kraken
   module Compressor
     class Task
       HISTORY = '.kraken'
-      DEFAULT_GLOB = '/{app,public}/**/*.{jpg,png,gif}'
+      DEFAULT_GLOB = '{app,public}/**/*.{jpg,png,gif}'
 
       attr_reader :kraken, :glob, :current_dir
 
-      def initialize(key, secret, glob_path: nil, working_directory: nil)
+      def initialize(key, secret, glob_path: nil, working_directory: nil, exclude: nil)
         @kraken      = Kraken::API.new(api_key: key, api_secret: secret)
         @glob        = glob_path || DEFAULT_GLOB
-        @current_dir = working_directory || Dir.pwd
+        @current_dir = working_directory || "#{Dir.pwd}/"
+        @exclude     = exclude
 
         prepare
       end
@@ -71,7 +72,7 @@ module Kraken
 
       def save_history
         new_history = []
-        history.merge(@mapped).each do |key, value|
+        @history.merge(@mapped).each do |key, value|
           new_history << "#{key};#{value}"
         end
 
@@ -83,6 +84,8 @@ module Kraken
 
         files = []
         @mapped = Dir[current_dir + glob].each_with_object({}) do |file_path, hash|
+          next if @exclude && file_path =~ @exclude
+
           @total_files += 1
 
           sha = Digest::SHA256.hexdigest File.read(file_path)
@@ -96,7 +99,7 @@ module Kraken
 
         # files already removed
         history.dup.each do |file_path, hash|
-          history.delete(file_path) unless files.include?(file_path)
+          @history.delete(file_path) unless files.include?(file_path)
         end
       end
 
