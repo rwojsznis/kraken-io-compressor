@@ -10,11 +10,12 @@ module Kraken
 
       attr_reader :kraken, :glob, :current_dir
 
-      def initialize(key, secret, glob_path: nil, working_directory: nil, exclude: nil)
+      def initialize(key, secret, glob_path: nil, working_directory: nil, exclude: nil, upload_options: nil)
         @kraken      = Kraken::API.new(api_key: key, api_secret: secret)
         @glob        = glob_path || DEFAULT_GLOB
         @current_dir = working_directory || "#{Dir.pwd}/"
         @exclude     = exclude
+        @upload      = upload_options || proc { }
 
         prepare
       end
@@ -64,7 +65,7 @@ module Kraken
       end
 
       def upload_with_retry(file_path)
-        kraken.upload(file_path)
+        kraken.upload(file_path, @upload.call(file_path))
       rescue Net::ReadTimeout
         puts "[ERR] #{file_path} upload failed, retrying..."
         retry
