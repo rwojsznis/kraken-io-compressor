@@ -40,11 +40,13 @@ module Kraken
       private
 
       def optimize
-        @mapped.dup.each do |file_path, sha|
+        saved = 0
 
+        @mapped.dup.each do |file_path, sha|
           data = upload_with_retry(file_path)
 
           if data.success
+            saved += data.saved_bytes
             puts "[OK]  #{file_path} | saved: #{(data.saved_bytes.to_f / 1024).round(2)} KB"
             puts "     -> downloading: #{data.kraked_url} (#{(data.kraked_size.to_f / 1024).round(2)} KB)"
             response = open(data.kraked_url).read
@@ -60,6 +62,7 @@ module Kraken
           end
         end
 
+        puts "Total size saved: #{(saved.to_f / 1024).round(2)} KB"
       ensure
         save_history
       end
